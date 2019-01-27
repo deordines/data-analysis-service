@@ -1,0 +1,18 @@
+monitor:
+  fixed-rate: 3000
+
+path:
+  in: '${user.home}\data\in'
+  out: '${user.home}\data\out'
+  processed: '${user.home}\data\processed'
+  error: '${user.home}\data\error'
+
+parser:
+  character:
+    default: 'ç'
+    items: ','
+    item: '-'
+
+format-type:
+  extensions:
+  - 'dat'
