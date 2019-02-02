@@ -56,12 +56,13 @@ java -jar ${jarName}.jar
 
 ```property
 monitor.fixed-rate = 3000 (ms)
-path.in = '${user.home}/data/in'
-path.out = '${user.home}/data/out'
-path.processed = '${user.home}/data/processed'
-path.error = '${user.home}/data/error'
-format-type.extensions = ['dat']
-parser.character.default = 'ç'
+directory.in = '${user.home}\data\in'
+directory.out = '${user.home}\data\out'
+directory.processing = '${user.home}\data\processing'
+directory.processed = '${user.home}\data\processed'
+directory.error = '${user.home}\data\error'
+supported-file.extensions = ['dat']
+parser.character.standard = 'ç'
 parser.character.items = ','
 parser.character.item = '-'
 ```

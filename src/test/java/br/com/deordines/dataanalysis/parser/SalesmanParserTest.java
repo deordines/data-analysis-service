@@ -1,36 +1,42 @@
 package br.com.deordines.dataanalysis.parser;
 
+import br.com.deordines.dataanalysis.config.ParserCharacterConfig;
 import br.com.deordines.dataanalysis.dto.Salesman;
-import br.com.deordines.dataanalysis.stubs.LineStub;
-import br.com.deordines.dataanalysis.stubs.SalesmanStub;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.NoSuchElementException;
+import java.util.Arrays;
+import java.util.List;
 
-@RunWith(MockitoJUnitRunner.class)
+import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
+
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(ParserCharacterConfig.class)
 public class SalesmanParserTest {
 
-    @Before
-    public void setup() {
-        ReflectionTestUtils.setField(AParser.class, "DEFAULT_CHARACTER", "ç");
-    }
-
     @Test
-    public void should_returnSalesman_when_givenValidLine() {
-        String line = LineStub.salesman1();
-        Salesman tested = SalesmanParser.parse(line);
-        Salesman expectateValue = SalesmanStub.salesman1();
-        Assert.assertEquals(expectateValue.toString(), tested.toString());
+    public void shouldReturnSalesmanWhenParseLines() {
+        mockStatic(ParserCharacterConfig.class);
+        when(ParserCharacterConfig.getSTANDARD()).thenReturn("ç");
+        IParse<Salesman> salesmanParser = new SalesmanParser(linesStub());
+        List<Salesman> salesmans = salesmanParser.parse();
+        Assert.assertEquals(2, salesmans.size());
+        Assert.assertEquals("Salesman 1", salesmans.get(0).getName());
+        Assert.assertEquals("Salesman 2", salesmans.get(1).getName());
     }
 
-    @Test(expected = NoSuchElementException.class)
-    public void should_throwNoSuchElementException_when_givenInvalidLine() {
-        String line = "any_data";
-        SalesmanParser.parse(line);
+    private List<String> linesStub() {
+        return Arrays.asList(
+                "001ç12345678901çSalesman 1ç10000",
+                "001ç12345678902çSalesman 2ç10000.99",
+                "002ç12345678000101çClient 1çBusiness Area 1",
+                "002ç12345678000102çClient 2çBusiness Area 2",
+                "003ç1ç[1-10-10.10]çSalesman 1",
+                "003ç2ç[1-10-10.10,2-20-20.99]çSalesman 2",
+                "003ç3ç[1-10-10.10,2-20-20.99,3-30-0.30]çSalesman 1");
     }
 }

@@ -1,133 +1,79 @@
 package br.com.deordines.dataanalysis.service;
 
-import br.com.deordines.dataanalysis.dto.FileData;
-import br.com.deordines.dataanalysis.dto.FormatType;
+import br.com.deordines.dataanalysis.config.ParserCharacterConfig;
 import br.com.deordines.dataanalysis.exception.FailProcessFileException;
 import br.com.deordines.dataanalysis.exception.InvalidFileException;
-import br.com.deordines.dataanalysis.exception.MoveFileException;
-import br.com.deordines.dataanalysis.exception.ReadFileException;
-import br.com.deordines.dataanalysis.helper.FileHelper;
-import br.com.deordines.dataanalysis.parser.AParser;
-import br.com.deordines.dataanalysis.stubs.FileDataStub;
-import br.com.deordines.dataanalysis.stubs.LineStub;
-import br.com.deordines.dataanalysis.stubs.ReportDataStub;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.NoSuchElementException;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest(FileHelper.class)
+@PrepareForTest(ParserCharacterConfig.class)
 public class FileDataServiceTest {
 
-    @InjectMocks
     private FileDataService fileDataService;
-
-    @Mock
-    private FormatType formatType;
-
-    @Mock
+    private FileService fileService;
     private ReportDataService reportDataService;
 
     @Before
-    public void setup() {
-        mockStatic(FileHelper.class);
-        FormatType formatType = new FormatType();
-        formatType.setExtensions(Collections.singletonList("DAT"));
-        ReflectionTestUtils.setField(fileDataService, "formatType", formatType);
-        ReflectionTestUtils.setField(fileDataService, "processedPath", "processedPath");
-        ReflectionTestUtils.setField(fileDataService, "errorPath", "errorPath");
-        ReflectionTestUtils.setField(AParser.class, "DEFAULT_CHARACTER", "ç");
-        ReflectionTestUtils.setField(AParser.class, "ITEMS_CHARACTER", ",");
-        ReflectionTestUtils.setField(AParser.class, "ITEM_CHARACTER", "-");
+    public void setUp() {
+        fileService = mock(FileService.class);
+        reportDataService = mock(ReportDataService.class);
+        fileDataService = new FileDataService(fileService, reportDataService);
+        mockStatic(ParserCharacterConfig.class);
     }
 
     @Test
-    public void should_returnFileData() {
-        when(FileHelper.getFilename(any())).thenReturn("filename.DAT");
-        when(reportDataService.report(any(), any())).thenReturn(ReportDataStub.reportData());
-        when(FileHelper.read(any())).thenReturn(LineStub.fileData());
-        FileData tested = fileDataService.process(mock(Path.class));
-        FileData expected = FileDataStub.fileData();
-        Assert.assertNotNull(expected.toString(), tested.toString());
+    public void shouldProcessPathWhenFileIsSupportedAndContentIsValid() {
+        when(fileService.move(any(), any())).thenReturn(mock(Path.class));
+        when(fileService.getFilename(any())).thenReturn("filename.dat");
+        when(fileService.isSupportedFile(any())).thenReturn(Boolean.TRUE);
+        when(fileService.read(any())).thenReturn(fileDataStub());
+        when(ParserCharacterConfig.getSTANDARD()).thenReturn("ç");
+        when(ParserCharacterConfig.getITEMS()).thenReturn(",");
+        when(ParserCharacterConfig.getITEM()).thenReturn("-");
+        fileDataService.process(mock(Path.class));
     }
 
     @Test(expected = InvalidFileException.class)
-    public void should_throwInvalidFileException_when_givenInvalidFile() {
-        when(FileHelper.getFilename(any())).thenReturn("filename.TXT");
-        fileDataService.process(mock(Path.class));
-    }
-
-    @Test(expected = MoveFileException.class)
-    public void should_throwMoveFileException_when_fileHelperThrowsException() {
-        when(FileHelper.getFilename(any())).thenReturn("filename.DAT");
-        when(FileHelper.move(any(), any())).thenThrow(MoveFileException.class);
-        fileDataService.process(mock(Path.class));
-    }
-
-    @Test(expected = ReadFileException.class)
-    public void should_throwReadFileException_when_fileHelperThrowsException() {
-        when(FileHelper.getFilename(any())).thenReturn("filename.DAT");
-        when(FileHelper.read(any())).thenThrow(ReadFileException.class);
+    public void shouldThrowInvalidFileExceptionWhenFileIsNotSupported() {
+        when(fileService.move(any(), any())).thenReturn(mock(Path.class));
+        when(fileService.getFilename(any())).thenReturn("filename.txt");
+        when(fileService.isSupportedFile(any())).thenReturn(Boolean.FALSE);
         fileDataService.process(mock(Path.class));
     }
 
     @Test(expected = FailProcessFileException.class)
-    public void should_throwFailProcessFileException_when_processThrowsException() {
+    public void shouldThrowFailProcessFileExceptionWhenFileContentIsInvalid() {
+        when(fileService.move(any(), any())).thenReturn(mock(Path.class));
+        when(fileService.getFilename(any())).thenReturn("filename.dat");
+        when(fileService.isSupportedFile(any())).thenReturn(Boolean.TRUE);
+        when(fileService.read(any())).thenReturn("invalid content".getBytes());
+        when(ParserCharacterConfig.getSTANDARD()).thenReturn("ç");
+        when(ParserCharacterConfig.getITEMS()).thenReturn(",");
+        when(ParserCharacterConfig.getITEM()).thenReturn("-");
         fileDataService.process(mock(Path.class));
     }
 
-    @Test(expected = FailProcessFileException.class)
-    public void should_throwFailProcessFileException_when_extractDataThrowsException() {
-        when(FileHelper.getFilename(any())).thenReturn("filename.DAT");
-        when(FileHelper.read(any())).thenReturn("wrong data".getBytes());
-        fileDataService.process(mock(Path.class));
-    }
-
-    @Test
-    public void should_extractFileData_when_givenFileData() {
-        String methodToExecute = "extractFileData";
-        byte[] argument = LineStub.fileData();
-        FileData tested = ReflectionTestUtils.invokeMethod(fileDataService, methodToExecute, argument);
-        FileData expectateValue = FileDataStub.fileData();
-        Assert.assertEquals(expectateValue.toString(), tested.toString());
-    }
-
-    @Test(expected = NoSuchElementException.class)
-    public void should_throwsInvalidFileException_when_givenEmptyFile() {
-        String methodToExecute = "extractFileData";
-        byte[] argument = "".getBytes();
-        ReflectionTestUtils.invokeMethod(fileDataService, methodToExecute, argument);
-    }
-
-    @Test
-    public void should_returnTrue_when_givenValidFormatType() {
-        when(formatType.getExtensions()).thenReturn(Collections.singletonList("DAT"));
-        String methodToExecute = "isValidFormatType";
-        String argument = "fileData.dat";
-        Boolean tested = ReflectionTestUtils.invokeMethod(fileDataService, methodToExecute, argument);
-        Assert.assertTrue(tested);
-    }
-
-    @Test
-    public void should_returnFalse_when_givenInvalidFormatType() {
-        String methodToExecute = "isValidFormatType";
-        String argument = "fileData.txt";
-        Boolean tested = ReflectionTestUtils.invokeMethod(fileDataService, methodToExecute, argument);
-        Assert.assertFalse(tested);
+    private byte[] fileDataStub() {
+        StringBuilder stringBuilder = new StringBuilder()
+                .append("001ç12345678901çSalesman 1ç10000")
+                .append("001ç12345678902çSalesman 2ç10000.99")
+                .append("002ç12345678000101çClient 1çBusiness Area 1")
+                .append("002ç12345678000102çClient 2çBusiness Area 2")
+                .append("003ç1ç[1-10-10.10]çSalesman 1")
+                .append("003ç2ç[1-10-10.10,2-20-20.99]çSalesman 2")
+                .append("003ç3ç[1-10-10.10,2-20-20.99,3-30-0.30]çSalesman 1");
+        return stringBuilder.toString().getBytes(StandardCharsets.ISO_8859_1);
     }
 }

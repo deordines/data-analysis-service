@@ -1,6 +1,6 @@
 package br.com.deordines.dataanalysis.exception;
 
-public class WriteFileException extends CustomException {
+public class WriteFileException extends RuntimeException {
 
     public WriteFileException() {
         super("Error to writing file.");

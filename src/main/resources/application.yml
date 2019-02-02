@@ -1,18 +1,19 @@
 monitor:
   fixed-rate: 3000
 
-path:
+directory:
   in: '${user.home}\data\in'
   out: '${user.home}\data\out'
+  processing: '${user.home}\data\processing'
   processed: '${user.home}\data\processed'
   error: '${user.home}\data\error'
 
 parser:
   character:
-    default: 'ç'
+    standard: 'ç'
     items: ','
     item: '-'
 
-format-type:
+supported-file:
   extensions:
   - 'dat'

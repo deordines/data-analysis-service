@@ -1,55 +1,36 @@
 package br.com.deordines.dataanalysis.parser;
 
+import br.com.deordines.dataanalysis.config.ParserCharacterConfig;
 import br.com.deordines.dataanalysis.dto.Item;
-import br.com.deordines.dataanalysis.stubs.ItemStub;
-import br.com.deordines.dataanalysis.stubs.LineStub;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(ParserCharacterConfig.class)
 public class ItemParserTest {
 
-    @Before
-    public void setup() {
-        ReflectionTestUtils.setField(AParser.class, "ITEMS_CHARACTER", ",");
-        ReflectionTestUtils.setField(AParser.class, "ITEM_CHARACTER", "-");
-    }
-
     @Test
-    public void should_returnItems_when_givenValidLine() {
-        String line = LineStub.sale1();
-        List<Item> tested = ItemParser.parse(line);
-        List<Item> expectateValue = ItemStub.items1();
-        Assert.assertEquals(expectateValue.toString(), tested.toString());
+    public void shouldReturnItemListWhenParseLines() {
+        mockStatic(ParserCharacterConfig.class);
+        when(ParserCharacterConfig.getITEM()).thenReturn("-");
+        IParse<Item> itemParser = new ItemParser(itemsStub());
+        List<Item> items = itemParser.parse();
+        Assert.assertEquals(3, items.size());
+        Assert.assertEquals(Long.valueOf(1), items.get(0).getId());
+        Assert.assertEquals(Long.valueOf(2), items.get(1).getId());
+        Assert.assertEquals(Long.valueOf(3), items.get(2).getId());
     }
 
-    @Test(expected = NumberFormatException.class)
-    public void should_throwNumberFormatException_when_givenInvalidLine() {
-        String line = "any_data";
-        ItemParser.parse(line);
-    }
-
-    @Test
-    public void should_returnItem_when_givenValidItem() {
-        String methodToExecute = "item";
-        String argument = LineStub.item1();
-        Item tested = ReflectionTestUtils.invokeMethod(mock(ItemParser.class), methodToExecute, argument);
-        Item expectateValue = ItemStub.item1();
-        Assert.assertEquals(expectateValue.toString(), tested.toString());
-    }
-
-    @Test(expected = NumberFormatException.class)
-    public void should_throwNumberFormatException_when_givenInvalidItem() {
-        String methodToExecute = "item";
-        String argument = "any_data";
-        ReflectionTestUtils.invokeMethod(mock(ItemParser.class), methodToExecute, argument);
+    private List<String> itemsStub() {
+        return Arrays.asList("1-10-10.10", "2-20-20.99", "3-30-0.30");
     }
 }

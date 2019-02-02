@@ -1,12 +1,11 @@
 package br.com.deordines.dataanalysis.monitor;
 
-import br.com.deordines.dataanalysis.exception.CustomException;
+import br.com.deordines.dataanalysis.config.DirectoryPathConfig;
 import br.com.deordines.dataanalysis.exception.FailMonitorException;
-import br.com.deordines.dataanalysis.helper.FileHelper;
 import br.com.deordines.dataanalysis.service.FileDataService;
+import br.com.deordines.dataanalysis.service.FileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,24 +17,24 @@ public class Monitor {
 
     private static final Logger logger = LoggerFactory.getLogger(Monitor.class);
 
-    @Value("${path.in}")
-    private String inPath;
-
+    private final FileService fileService;
     private final FileDataService fileDataService;
 
-    public Monitor(FileDataService fileDataService) {
+    public Monitor(FileService fileService, FileDataService fileDataService) {
+        this.fileService = fileService;
         this.fileDataService = fileDataService;
     }
 
     @Scheduled(fixedRateString = "${monitor.fixed-rate}")
     public void monitor() {
         try {
-            logger.info("Monitoring folder: {}", inPath);
-            Path folderPath = FileHelper.getPath(inPath);
-            List<Path> folderContent = FileHelper.walk(folderPath);
-            folderContent.stream().filter(FileHelper::isFile).forEach(fileDataService::process);
-        } catch (CustomException e) {
-            throw e;
+            logger.info("Monitoring folder.");
+            Path folderPath = fileService.getPath(DirectoryPathConfig.getIN());
+            List<Path> folderContent = fileService.walk(folderPath);
+            folderContent.stream()
+                    .filter(fileService::isFile)
+                    .findAny()
+                    .ifPresent(fileDataService::process);
         } catch (Exception e) {
             logger.error("Error to monitoring folder");
             throw new FailMonitorException();

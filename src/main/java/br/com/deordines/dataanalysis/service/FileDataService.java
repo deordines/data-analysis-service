@@ -1,18 +1,17 @@
 package br.com.deordines.dataanalysis.service;
 
+import br.com.deordines.dataanalysis.config.DirectoryPathConfig;
+import br.com.deordines.dataanalysis.dto.Client;
 import br.com.deordines.dataanalysis.dto.FileData;
-import br.com.deordines.dataanalysis.dto.FormatType;
-import br.com.deordines.dataanalysis.exception.CustomException;
+import br.com.deordines.dataanalysis.dto.Sale;
+import br.com.deordines.dataanalysis.dto.Salesman;
 import br.com.deordines.dataanalysis.exception.FailProcessFileException;
 import br.com.deordines.dataanalysis.exception.InvalidFileException;
-import br.com.deordines.dataanalysis.helper.FileHelper;
 import br.com.deordines.dataanalysis.parser.ClientParser;
-import br.com.deordines.dataanalysis.parser.LayoutParser;
 import br.com.deordines.dataanalysis.parser.SaleParser;
 import br.com.deordines.dataanalysis.parser.SalesmanParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -26,42 +25,34 @@ public class FileDataService {
     private static final Logger logger = LoggerFactory.getLogger(FileDataService.class);
 
     private static final String LINE_SEPARATOR = System.getProperty("line.separator");
-    private static final String FILENAME_REGEX = "(^.*)([.+$].*)";
-    private static final String FILENAME_REPLACEMENT = "$1";
-    private static final String EXTENSION_REPLACEMENT = "$2";
 
-    @Value("${path.processed}")
-    private String processedPath;
-
-    @Value("${path.error}")
-    private String errorPath;
-
-    private final FormatType formatType;
+    private final FileService fileService;
     private final ReportDataService reportDataService;
 
-    public FileDataService(FormatType formatType, ReportDataService reportDataService) {
-        this.formatType = formatType;
+    public FileDataService(FileService fileService, ReportDataService reportDataService) {
+        this.fileService = fileService;
         this.reportDataService = reportDataService;
     }
 
-    public FileData process(Path filePath) {
+    public void process(Path filePath) {
         try {
-            logger.info("Starting file processing.");
-            if (!isValidFormatType(FileHelper.getFilename(filePath)))
+            logger.info("Starting file processing");
+            filePath = fileService.move(filePath, DirectoryPathConfig.getPROCESSING());
+            String filename = fileService.getFilename(filePath);
+            logger.info("File: {}", filename);
+
+            if (!fileService.isSupportedFile(filename))
                 throw new InvalidFileException();
 
-            FileData fileData = extractFileData(FileHelper.read(filePath));
-            String filename = FileHelper.getFilename(filePath).replaceAll(FILENAME_REGEX, FILENAME_REPLACEMENT);
-            reportDataService.report(fileData, filename);
-            FileHelper.move(filePath, processedPath);
-
-            return fileData;
-        } catch (CustomException e) {
-            FileHelper.move(filePath, errorPath);
+            FileData fileData = extractFileData(fileService.read(filePath));
+            reportDataService.buildReport(fileData, filename);
+            fileService.move(filePath, DirectoryPathConfig.getPROCESSED());
+        } catch (InvalidFileException e) {
+            fileService.move(filePath, DirectoryPathConfig.getERROR());
             throw e;
         } catch (Exception e) {
             logger.error("Error to processing file.", e);
-            FileHelper.move(filePath, errorPath);
+            fileService.move(filePath, DirectoryPathConfig.getERROR());
             throw new FailProcessFileException();
         }
     }
@@ -69,24 +60,16 @@ public class FileDataService {
     private FileData extractFileData(byte[] data) {
         logger.info("File data extraction.");
         String fileData = new String(data, StandardCharsets.ISO_8859_1);
-        FileData.Builder fileDataBuilder = FileData.Builder.of();
         List<String> lines = Arrays.asList(fileData.split(LINE_SEPARATOR));
-        lines.forEach(x -> {
-            Long lineType = LayoutParser.parse(x);
-            if (lineType == 1)
-                fileDataBuilder.salesman(SalesmanParser.parse(x));
-            else if (lineType == 2)
-                fileDataBuilder.client(ClientParser.parse(x));
-            else
-                fileDataBuilder.sale(SaleParser.parse(x));
-        });
-        return fileDataBuilder.build();
-    }
 
-    private Boolean isValidFormatType(String filename) {
-        logger.info("Format type validation.");
-        return formatType.getExtensions().stream()
-                .anyMatch(x -> filename.replaceAll(FILENAME_REGEX, EXTENSION_REPLACEMENT).toUpperCase()
-                        .contains(x.toUpperCase()));
+        List<Salesman> salesmans = new SalesmanParser(lines).parse();
+        List<Client> clients = new ClientParser(lines).parse();
+        List<Sale> sales = new SaleParser(lines).parse();
+
+        return FileData.Builder.of()
+                .salesmans(salesmans)
+                .clients(clients)
+                .sales(sales)
+                .build();
     }
 }

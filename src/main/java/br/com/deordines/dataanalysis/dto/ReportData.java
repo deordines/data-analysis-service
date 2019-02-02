@@ -56,4 +56,47 @@ public class ReportData {
     public String toString() {
         return ToStringBuilder.reflectionToString(this, ToStringStyle.JSON_STYLE);
     }
+
+    public static final class Builder {
+        private Integer clientsAmount;
+        private Integer salesmansAmount;
+        private Long idSaleMoreExpensive;
+        private String worstSalesman;
+
+        private Builder() {
+        }
+
+        public static Builder of() {
+            return new Builder();
+        }
+
+        public Builder clientsAmount(Integer clientsAmount) {
+            this.clientsAmount = clientsAmount;
+            return this;
+        }
+
+        public Builder salesmansAmount(Integer salesmansAmount) {
+            this.salesmansAmount = salesmansAmount;
+            return this;
+        }
+
+        public Builder idSaleMoreExpensive(Long idSaleMoreExpensive) {
+            this.idSaleMoreExpensive = idSaleMoreExpensive;
+            return this;
+        }
+
+        public Builder worstSalesman(String worstSalesman) {
+            this.worstSalesman = worstSalesman;
+            return this;
+        }
+
+        public ReportData build() {
+            ReportData reportData = new ReportData();
+            reportData.setClientsAmount(clientsAmount);
+            reportData.setSalesmansAmount(salesmansAmount);
+            reportData.setIdSaleMoreExpensive(idSaleMoreExpensive);
+            reportData.setWorstSalesman(worstSalesman);
+            return reportData;
+        }
+    }
 }

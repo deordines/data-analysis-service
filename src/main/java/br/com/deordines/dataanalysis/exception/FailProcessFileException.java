@@ -1,8 +1,8 @@
 package br.com.deordines.dataanalysis.exception;
 
-public class FailProcessFileException extends CustomException {
+public class FailProcessFileException extends RuntimeException {
 
     public FailProcessFileException() {
-        super("Error to processing file.");
+        super("Error to PROCESSING file.");
     }
 }

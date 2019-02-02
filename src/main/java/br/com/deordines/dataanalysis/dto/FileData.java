@@ -65,18 +65,18 @@ public class FileData {
             return new Builder();
         }
 
-        public Builder salesman(Salesman salesman) {
-            salesmans.add(salesman);
+        public Builder salesmans(List<Salesman> salesmans) {
+            this.salesmans.addAll(salesmans);
             return this;
         }
 
-        public Builder client(Client client) {
-            clients.add(client);
+        public Builder clients(List<Client> clients) {
+            this.clients.addAll(clients);
             return this;
         }
 
-        public Builder sale(Sale sale) {
-            sales.add(sale);
+        public Builder sales(List<Sale> sales) {
+            this.sales.addAll(sales);
             return this;
         }
 
