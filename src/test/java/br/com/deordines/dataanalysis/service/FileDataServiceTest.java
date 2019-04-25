@@ -74,6 +74,6 @@ public class FileDataServiceTest {
                 .append("003ç1ç[1-10-10.10]çSalesman 1")
                 .append("003ç2ç[1-10-10.10,2-20-20.99]çSalesman 2")
                 .append("003ç3ç[1-10-10.10,2-20-20.99,3-30-0.30]çSalesman 1");
-        return stringBuilder.toString().getBytes(StandardCharsets.ISO_8859_1);
+        return stringBuilder.toString().getBytes(StandardCharsets.UTF_8);
     }
 }

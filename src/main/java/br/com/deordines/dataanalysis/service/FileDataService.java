@@ -59,7 +59,7 @@ public class FileDataService {
 
     private FileData extractFileData(byte[] data) {
         logger.info("File data extraction.");
-        String fileData = new String(data, StandardCharsets.ISO_8859_1);
+        String fileData = new String(data, StandardCharsets.UTF_8);
         List<String> lines = Arrays.asList(fileData.split(LINE_SEPARATOR));
 
         List<Salesman> salesmans = new SalesmanParser(lines).parse();
